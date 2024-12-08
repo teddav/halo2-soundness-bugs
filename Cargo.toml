@@ -1,0 +1,7 @@
+[package]
+name = "pse-halo2-soundness-bugs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+halo2_proofs = { git = "https://github.com/privacy-scaling-explorations/halo2", tag = "v0.4.0" }
