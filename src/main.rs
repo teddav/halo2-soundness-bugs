@@ -1,8 +1,14 @@
+use std::marker::PhantomData;
+
+use halo2_poseidon::poseidon::primitives::{ConstantLength, Hash, P128Pow5T3 as OrchardNullifier};
 use halo2_proofs::{
+    arithmetic::Field,
     circuit::Value,
     dev::{CellValue, MockProver},
-    halo2curves::{bn256::Fr as Fp, ff::PrimeField},
+    halo2curves::{bn256::Fr as Fp, pasta::pallas::Base as PallasFp},
+    plonk::Circuit,
 };
+use rand::rngs::OsRng;
 
 // mod simple_circuit;
 // use simple_circuit::SimpleCircuit;
@@ -25,42 +31,78 @@ use casino1::CasinoCircuit;
 
 mod casino2;
 use casino2::CasinoCircuitConstrained;
+
+mod non_deterministic;
+use non_deterministic::NonDeterministicCircuit;
+
+mod hash;
+use hash::HashCircuit;
+
+// fn main() {
+//     let circuit = CasinoCircuit {
+//         deposits: vec![
+//             Value::known(Fp::from(300_000)),
+//             Value::known(Fp::from(400_000)),
+//             Value::known(Fp::from(500_000)),
+//         ],
+//     };
+//     let total = Fp::from(950_000);
+//     let mut prover = MockProver::run(4, &circuit, vec![vec![total]]).unwrap();
+
+//     // let's modify the advice column
+//     let advice = prover.advice_mut(0);
+//     advice[3] = CellValue::Assigned(total);
+
+//     assert!(prover.verify().is_ok());
+
+//     // Fake the constrained circuit
+//     let mut deposits = vec![
+//         Value::known(Fp::from(300_000)),
+//         Value::known(Fp::from(400_000)),
+//         Value::known(Fp::from(500_000)),
+//     ];
+//     let target = Fp::from(950_000);
+
+//     let sum = deposits
+//         .iter()
+//         .fold(Value::known(Fp::zero()), |acc, val| acc + val);
+//     let fake_deposit = Value::known(Fp::zero()) - sum + Value::known(target);
+//     deposits.push(fake_deposit);
+
+//     let circuit = CasinoCircuitConstrained { deposits };
+//     let total = target;
+//     let prover = MockProver::run(4, &circuit, vec![vec![total]]).unwrap();
+//     assert!(prover.verify().is_ok());
+
+//     let a = Fp::from(3);
+//     let fake_a = Fp::zero() - a;
+//     println!("fake_a: {fake_a:?}");
+//     let b = a.square();
+//     let circuit = NonDeterministicCircuit {
+//         a: Value::known(fake_a),
+//         b: Value::known(b),
+//     };
+//     let total = b;
+//     let prover = MockProver::run(4, &circuit, vec![vec![total]]).unwrap();
+//     assert!(prover.verify().is_ok());
+// }
+
 fn main() {
-    let circuit = CasinoCircuit {
-        deposits: vec![
-            Value::known(Fp::from(300_000)),
-            Value::known(Fp::from(400_000)),
-            Value::known(Fp::from(500_000)),
-        ],
+    let rng = OsRng;
+
+    // let message = [PallasFp::random(rng), PallasFp::random(rng)];
+    let message = [PallasFp::from(1), PallasFp::from(2)];
+    println!("message: {:#?}", message);
+    let output = Hash::<_, OrchardNullifier, ConstantLength<2>, 3, 2>::init().hash(message);
+    println!("output: {:#?}", output);
+
+    let circuit = HashCircuit::<OrchardNullifier, 3, 2, 2> {
+        message: Value::known(message),
+        output: Value::known(output),
+        _spec: PhantomData,
     };
-    let total = Fp::from(950_000);
-    let mut prover = MockProver::run(4, &circuit, vec![vec![total]]).unwrap();
 
-    // let's modify the advice column
-    let advice = prover.advice_mut(0);
-    advice[3] = CellValue::Assigned(total);
-
-    assert!(prover.verify().is_ok());
-
-    // Fake the constrained circuit
-    let mut deposits = vec![
-        Value::known(Fp::from(300_000)),
-        Value::known(Fp::from(400_000)),
-        Value::known(Fp::from(500_000)),
-    ];
-    let MODULUS = "21888242871839275222246405745257275088548364400416034343698204186575808495616"; // Fp::MODULUS;
-    let modulus = Value::known(Fp::from_str_vartime(&MODULUS).unwrap());
-    let target = Fp::from(950_000);
-
-    let sum = deposits
-        .iter()
-        .fold(Value::known(Fp::zero()), |acc, val| acc + val);
-    let fake_deposit = modulus - sum + Value::known(target) + Value::known(Fp::from(1));
-    deposits.push(fake_deposit);
-
-    let circuit = CasinoCircuitConstrained { deposits };
-    let total = target;
-    let prover = MockProver::run(4, &circuit, vec![vec![total]]).unwrap();
-    println!("prover: {:#?}", prover);
+    let prover = MockProver::run(6, &circuit, vec![]).unwrap();
+    // println!("prover: {:#?}", prover);
     assert!(prover.verify().is_ok());
 }
