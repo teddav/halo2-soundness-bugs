@@ -41,6 +41,17 @@ use hash::HashCircuit;
 mod merkle;
 use merkle::MerkleCircuit;
 
+mod merkle_nohash1;
+mod merkle_nohash2;
+mod merkle_nohash3;
+mod merkle_nohash4;
+mod merkle_nohash5;
+use merkle_nohash1::MerkleCircuitNoHash1;
+use merkle_nohash2::MerkleCircuitNoHash2;
+use merkle_nohash3::MerkleCircuitNoHash3;
+use merkle_nohash4::MerkleCircuitNoHash4;
+use merkle_nohash5::MerkleCircuitNoHash5;
+
 // fn main() {
 //     let circuit = CasinoCircuit {
 //         deposits: vec![
@@ -91,52 +102,197 @@ use merkle::MerkleCircuit;
 // }
 
 // fn main() {
-//     let rng = OsRng;
-
-//     // let message = [PallasFp::random(rng), PallasFp::random(rng)];
-//     let message = [PallasFp::from(1), PallasFp::from(2)];
+//     let message = [PallasFp::from(1), PallasFp::from(2), PallasFp::from(3)];
 //     println!("message: {:#?}", message);
-//     let output = Hash::<_, OrchardNullifier, ConstantLength<2>, 3, 2>::init().hash(message);
+//     let output = Hash::<_, OrchardNullifier, ConstantLength<3>, 3, 2>::init().hash(message);
 //     println!("output: {:#?}", output);
 
-//     let circuit = HashCircuit::<OrchardNullifier, 3, 2, 2> {
+//     let circuit = HashCircuit::<OrchardNullifier, 3, 2, 3> {
 //         message: Value::known(message),
 //         output: Value::known(output),
 //         _spec: PhantomData,
 //     };
 
-//     let prover = MockProver::run(6, &circuit, vec![]).unwrap();
-//     // println!("prover: {:#?}", prover);
+//     let prover = MockProver::run(7, &circuit, vec![]).unwrap();
+//     println!("prover: {:#?}", prover);
 //     assert!(prover.verify().is_ok());
 // }
 
 fn main() {
-    let rng = OsRng;
+    // let leaves = [
+    //     PallasFp::from(1),
+    //     PallasFp::from(2),
+    //     PallasFp::from(3),
+    //     PallasFp::from(4),
+    // ];
+    // let h1 =
+    //     Hash::<_, OrchardNullifier, ConstantLength<2>, 3, 2>::init().hash([leaves[0], leaves[1]]);
+    // let h2 =
+    //     Hash::<_, OrchardNullifier, ConstantLength<2>, 3, 2>::init().hash([leaves[2], leaves[3]]);
+    // let root = Hash::<_, OrchardNullifier, ConstantLength<2>, 3, 2>::init().hash([h1, h2]);
+    // println!("root: {root:?}");
 
-    // let message = [PallasFp::random(rng), PallasFp::random(rng)];
+    // let circuit = MerkleCircuit::<OrchardNullifier, 3, 2> {
+    //     leaf: Value::known(leaves[0]),
+    //     path_elements: vec![Value::known(leaves[1]), Value::known(h2)],
+    //     path_indices: vec![
+    //         Value::known(PallasFp::from(0)),
+    //         Value::known(PallasFp::from(0)),
+    //     ],
+    //     _spec: PhantomData,
+    // };
+
+    // let prover = MockProver::run(10, &circuit, vec![]).unwrap();
+    // assert!(prover.verify().is_ok());
+
+    // merke_nohash1();
+    // merke_nohash2();
+    // merke_nohash3();
+    // merke_nohash4();
+    merke_nohash5();
+}
+
+fn merke_nohash1() {
     let leaves = [
-        PallasFp::from(1),
         PallasFp::from(2),
-        PallasFp::from(3),
-        PallasFp::from(4),
+        PallasFp::from(5),
+        PallasFp::from(11),
+        PallasFp::from(20),
     ];
-    let h1 =
-        Hash::<_, OrchardNullifier, ConstantLength<2>, 3, 2>::init().hash([leaves[0], leaves[1]]);
-    let h2 =
-        Hash::<_, OrchardNullifier, ConstantLength<2>, 3, 2>::init().hash([leaves[2], leaves[3]]);
-    let root = Hash::<_, OrchardNullifier, ConstantLength<2>, 3, 2>::init().hash([h1, h2]);
-    println!("root: {root:?}");
+    let h1 = leaves[0] + leaves[1];
+    let h2 = leaves[2] + leaves[3];
+    let root = h1 + h2;
 
-    let circuit = MerkleCircuit::<OrchardNullifier, 3, 2> {
+    let circuit = MerkleCircuitNoHash1 {
         leaf: Value::known(leaves[0]),
         path_elements: vec![Value::known(leaves[1]), Value::known(h2)],
         path_indices: vec![
             Value::known(PallasFp::from(0)),
             Value::known(PallasFp::from(0)),
         ],
-        _spec: PhantomData,
     };
 
-    let prover = MockProver::run(10, &circuit, vec![]).unwrap();
+    let prover = MockProver::run(4, &circuit, vec![vec![root]]).unwrap();
     assert!(prover.verify().is_ok());
+}
+
+fn merke_nohash2() {
+    let leaves = [
+        PallasFp::from(2),
+        PallasFp::from(5),
+        PallasFp::from(11),
+        PallasFp::from(20),
+    ];
+    let h1 = leaves[0] + leaves[1];
+    let h2 = leaves[2] + leaves[3];
+    let root = h1 + h2;
+
+    let circuit = MerkleCircuitNoHash2 {
+        leaf: Value::known(leaves[0]),
+        path_elements: vec![Value::known(leaves[1]), Value::known(h2)],
+        path_indices: vec![
+            Value::known(PallasFp::from(0)),
+            Value::known(PallasFp::from(0)),
+        ],
+    };
+
+    let prover = MockProver::run(4, &circuit, vec![vec![root]]).unwrap();
+    assert!(prover.verify().is_ok());
+
+    // Let's fake the proof
+
+    let circuit = MerkleCircuitNoHash2 {
+        leaf: Value::known(root),
+        path_elements: vec![],
+        path_indices: vec![],
+    };
+
+    let prover = MockProver::run(4, &circuit, vec![vec![root]]).unwrap();
+    // println!("prover: {:#?}", prover);
+    assert!(prover.verify().is_ok());
+}
+
+fn merke_nohash3() {
+    let leaves = [
+        PallasFp::from(2),
+        PallasFp::from(5),
+        PallasFp::from(11),
+        PallasFp::from(20),
+    ];
+    let h1 = leaves[0] + leaves[1];
+    let h2 = leaves[2] + leaves[3];
+    let root = h1 + h2;
+
+    let circuit = MerkleCircuitNoHash3 {
+        leaf: Value::known(h1),
+        path_elements: vec![Value::known(h2)],
+        path_indices: vec![Value::known(PallasFp::from(0))],
+    };
+
+    let prover = MockProver::run(4, &circuit, vec![vec![root]]).unwrap();
+    assert!(prover.verify().is_ok());
+}
+
+fn merke_nohash4() {
+    let hash_leaf = |v: PallasFp| v + v;
+    let leaves = [
+        PallasFp::from(2),
+        hash_leaf(PallasFp::from(5)),
+        hash_leaf(PallasFp::from(11)),
+        hash_leaf(PallasFp::from(20)),
+    ];
+    let h1 = hash_leaf(leaves[0]) + leaves[1];
+    let h2 = leaves[2] + leaves[3];
+    let root = h1 + h2;
+
+    let circuit = MerkleCircuitNoHash4 {
+        leaf: Value::known(leaves[0]),
+        path_elements: vec![Value::known(leaves[1]), Value::known(h2)],
+        path_indices: vec![
+            Value::known(PallasFp::from(0)),
+            Value::known(PallasFp::from(0)),
+        ],
+    };
+
+    let prover = MockProver::run(4, &circuit, vec![vec![root]]).unwrap();
+    assert!(prover.verify().is_ok());
+
+    // Let's fake the proof
+    let fake_root = PallasFp::from(0x1234);
+    let mut prover = MockProver::run(4, &circuit, vec![vec![fake_root]]).unwrap();
+    let advice = prover.advice_mut(2);
+    advice[7] = CellValue::Assigned(fake_root);
+    assert!(prover.verify().is_ok());
+}
+
+fn merke_nohash5() {
+    let hash_leaf = |v: PallasFp| v + v;
+    let leaves = [
+        PallasFp::from(2),
+        hash_leaf(PallasFp::from(5)),
+        hash_leaf(PallasFp::from(11)),
+        hash_leaf(PallasFp::from(20)),
+    ];
+    let h1 = hash_leaf(leaves[0]) + leaves[1];
+    let h2 = leaves[2] + leaves[3];
+    let root = h1 + h2;
+
+    let circuit = MerkleCircuitNoHash5 {
+        leaf: Value::known(leaves[0]),
+        path_elements: vec![Value::known(leaves[1]), Value::known(h2)],
+        path_indices: vec![
+            Value::known(PallasFp::from(0)),
+            Value::known(PallasFp::from(0)),
+        ],
+    };
+
+    let prover = MockProver::run(4, &circuit, vec![vec![root]]).unwrap();
+    assert!(prover.verify().is_ok());
+
+    // Let's fake the proof
+    let fake_root = PallasFp::from(0x1234);
+    let mut prover = MockProver::run(4, &circuit, vec![vec![fake_root]]).unwrap();
+    let advice = prover.advice_mut(2);
+    advice[4] = CellValue::Assigned(fake_root);
+    assert!(prover.verify().is_err());
 }
