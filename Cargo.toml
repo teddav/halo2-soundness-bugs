@@ -9,7 +9,7 @@ halo2_poseidon = { git = "https://github.com/privacy-scaling-explorations/poseid
 rand = "0.8.0"
 
 [patch."https://github.com/privacy-scaling-explorations/halo2"]
-halo2_proofs = { path = "../PSE-HALO2/halo2/halo2_proofs" }
+halo2_proofs = { path = "../halo2/halo2_proofs" }
 
 [patch."https://github.com/privacy-scaling-explorations/poseidon-gadget"]
-halo2_poseidon = { path = "../PSE-HALO2/poseidon-gadget" }
+halo2_poseidon = { path = "../poseidon-gadget" }

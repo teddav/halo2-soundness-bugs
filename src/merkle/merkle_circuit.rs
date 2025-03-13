@@ -6,7 +6,9 @@ use halo2_proofs::{
     arithmetic::Field,
     circuit::{AssignedCell, Layouter, SimpleFloorPlanner, Value},
     halo2curves::pasta::Fp,
-    plonk::{Advice, Circuit, Column, ConstraintSystem, ErrorFront, Expression, Selector},
+    plonk::{
+        Advice, Circuit, Column, ConstraintSystem, ErrorFront, Expression, Instance, Selector,
+    },
     poly::Rotation,
 };
 use std::marker::PhantomData;
@@ -17,6 +19,7 @@ pub struct MerkleConfig<F: Field, const WIDTH: usize, const RATE: usize> {
     pub merkle: [Column<Advice>; 3],
     pub swap_selector: Selector,
     pub swap_bit_bool_selector: Selector,
+    pub root_hash: Column<Instance>,
 }
 
 #[derive(Debug, Default, Clone)]
@@ -58,6 +61,9 @@ impl<S: Spec<Fp, WIDTH, RATE>, const WIDTH: usize, const RATE: usize> Circuit<Fp
             rc_a.try_into().unwrap(),
             rc_b.try_into().unwrap(),
         );
+
+        let root_hash = meta.instance_column();
+        meta.enable_equality(root_hash);
 
         let advice = [
             meta.advice_column(),
@@ -104,6 +110,7 @@ impl<S: Spec<Fp, WIDTH, RATE>, const WIDTH: usize, const RATE: usize> Circuit<Fp
             merkle: advice,
             swap_selector,
             swap_bit_bool_selector,
+            root_hash,
         }
     }
 
