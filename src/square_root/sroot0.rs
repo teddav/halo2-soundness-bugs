@@ -6,20 +6,19 @@ use halo2_proofs::{
 };
 
 #[derive(Debug, Default, Clone, Copy)]
-pub struct NonDeterministicCircuit {
-    pub a: Value<Fp>,
-    pub b: Value<Fp>,
+pub struct SquareRootCircuit {
+    pub root: Value<Fp>,
 }
 
 #[derive(Clone, Debug)]
-pub struct NonDeterministicConfig {
+pub struct SquareRootConfig {
     advice: Column<Advice>,
     instance: Column<Instance>,
     myselector: Selector,
 }
 
-impl Circuit<Fp> for NonDeterministicCircuit {
-    type Config = NonDeterministicConfig;
+impl Circuit<Fp> for SquareRootCircuit {
+    type Config = SquareRootConfig;
     type FloorPlanner = SimpleFloorPlanner;
 
     fn without_witnesses(&self) -> Self {
@@ -36,12 +35,12 @@ impl Circuit<Fp> for NonDeterministicCircuit {
 
         meta.create_gate("square", |meta| {
             let s = meta.query_selector(myselector);
-            let a = meta.query_advice(advice, Rotation::cur());
-            let b = meta.query_advice(advice, Rotation::next());
-            vec![s * (a.clone() * a - b)]
+            let root = meta.query_advice(advice, Rotation::cur());
+            let square = meta.query_advice(advice, Rotation::next());
+            vec![s * (root.clone() * root - square)]
         });
 
-        NonDeterministicConfig {
+        SquareRootConfig {
             advice,
             instance,
             myselector,
@@ -57,9 +56,8 @@ impl Circuit<Fp> for NonDeterministicCircuit {
             || "main region",
             |mut region| {
                 config.myselector.enable(&mut region, 0)?;
-
-                region.assign_advice(|| "a", config.advice, 0, || self.a)?;
-                region.assign_advice(|| "b", config.advice, 1, || self.b)
+                region.assign_advice(|| "a", config.advice, 0, || self.root)?;
+                region.assign_advice(|| "square", config.advice, 1, || self.root * self.root)
             },
         )?;
 
