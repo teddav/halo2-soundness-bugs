@@ -2,7 +2,6 @@ use halo2_proofs::{
     circuit::{Layouter, SimpleFloorPlanner, Value},
     halo2curves::bn256::Fr as Fp,
     plonk::{Advice, Circuit, Column, ConstraintSystem, ErrorFront, Instance},
-    poly::Rotation,
 };
 
 #[derive(Debug, Default, Clone)]
@@ -29,14 +28,6 @@ impl Circuit<Fp> for CasinoCircuit {
         let instance = meta.instance_column();
         meta.enable_equality(advice);
         meta.enable_equality(instance);
-
-        // meta.create_gate("random_gate", |meta| {
-        //     let s = meta.query_selector(myselector);
-        //     let a = meta.query_advice(advice, Rotation(0));
-        //     let b = meta.query_advice(advice, Rotation(1));
-        //     let c = meta.query_advice(advice, Rotation(2));
-        //     vec![s * (a + b - c)]
-        // });
 
         CasinoConfig { advice, instance }
     }

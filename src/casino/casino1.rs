@@ -6,7 +6,7 @@ use halo2_proofs::{
 };
 
 #[derive(Debug, Default, Clone)]
-pub struct CasinoCircuitConstrained {
+pub struct CasinoCircuit {
     pub deposits: Vec<Value<Fp>>,
 }
 
@@ -15,11 +15,11 @@ pub struct CasinoConfig {
     deposits: Column<Advice>,
     sum: Column<Advice>,
     public: Column<Instance>,
-    myselector: Selector,
-    myselector2: Selector,
+    selector_running_sum: Selector,
+    selector_first_row: Selector,
 }
 
-impl Circuit<Fp> for CasinoCircuitConstrained {
+impl Circuit<Fp> for CasinoCircuit {
     type Config = CasinoConfig;
     type FloorPlanner = SimpleFloorPlanner;
 
@@ -31,14 +31,22 @@ impl Circuit<Fp> for CasinoCircuitConstrained {
         let deposits = meta.advice_column();
         let sum = meta.advice_column();
         let public = meta.instance_column();
-        let myselector = meta.selector();
-        let myselector2 = meta.selector();
         meta.enable_equality(deposits);
         meta.enable_equality(sum);
         meta.enable_equality(public);
 
+        let selector_running_sum = meta.selector();
+        let selector_first_row = meta.selector();
+
+        meta.create_gate("first row", |meta| {
+            let s = meta.query_selector(selector_first_row);
+            let deposit = meta.query_advice(deposits, Rotation::cur());
+            let sum = meta.query_advice(sum, Rotation::cur());
+            vec![s.clone() * deposit, s * sum]
+        });
+
         meta.create_gate("running sum", |meta| {
-            let s = meta.query_selector(myselector);
+            let s = meta.query_selector(selector_running_sum);
 
             let dcur = meta.query_advice(deposits, Rotation::cur());
             let sumprev = meta.query_advice(sum, Rotation::prev());
@@ -47,21 +55,12 @@ impl Circuit<Fp> for CasinoCircuitConstrained {
             vec![s * (sumprev + dcur - sumcur)]
         });
 
-        meta.create_gate("total", |meta| {
-            let s = meta.query_selector(myselector2);
-
-            let sumprev = meta.query_advice(sum, Rotation::prev());
-            let sumcur = meta.query_advice(sum, Rotation::cur());
-
-            vec![s * (sumprev - sumcur)]
-        });
-
         CasinoConfig {
             deposits,
             sum,
             public,
-            myselector,
-            myselector2,
+            selector_running_sum,
+            selector_first_row,
         }
     }
 
@@ -73,13 +72,27 @@ impl Circuit<Fp> for CasinoCircuitConstrained {
         let out = layouter.assign_region(
             || "main region",
             |mut region| {
+                // We enable the first row selector
+                // values should be 0 on the first row
+                config.selector_first_row.enable(&mut region, 0)?;
+                region.assign_advice(
+                    || "deposit0",
+                    config.deposits,
+                    0,
+                    || Value::known(Fp::zero()),
+                )?;
+                let mut total =
+                    region.assign_advice(|| "sum0", config.sum, 0, || Value::known(Fp::zero()))?;
+
+                // then we loop over deposits, starting from row 1
                 let mut deposits = vec![];
-                let mut i = 0;
+                let mut i = 1;
                 let mut sum = Value::known(Fp::zero());
 
                 for deposit in self.deposits.iter() {
-                    if i > 0 {
-                        config.myselector.enable(&mut region, i)?;
+                    // we enable the running sum selector
+                    if i > 1 {
+                        config.selector_running_sum.enable(&mut region, i)?;
                     }
 
                     deposits.push(region.assign_advice(
@@ -90,18 +103,12 @@ impl Circuit<Fp> for CasinoCircuitConstrained {
                     )?);
 
                     sum = sum + *deposit;
-                    region.assign_advice(|| "sum", config.sum, i, || sum)?;
+                    total = region.assign_advice(|| "sum", config.sum, i, || sum)?;
 
                     i += 1;
                 }
 
-                config.myselector2.enable(&mut region, i)?;
-
-                let total = deposits
-                    .iter()
-                    .fold(Value::known(Fp::zero()), |acc, d| acc + d.value());
-
-                region.assign_advice(|| "out", config.sum, i, || total)
+                Ok(total)
             },
         )?;
 

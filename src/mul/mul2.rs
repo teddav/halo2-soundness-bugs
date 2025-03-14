@@ -36,8 +36,8 @@ impl Circuit<Fp> for MultiplicationCircuit {
 
         meta.create_gate("mul gate", |meta| {
             let s = meta.query_selector(myselector);
-            let a = meta.query_advice(advice, Rotation::cur());
-            let b = meta.query_advice(advice, Rotation::next());
+            let a = meta.query_advice(advice, Rotation(0));
+            let b = meta.query_advice(advice, Rotation(1));
             let c = meta.query_advice(advice, Rotation(2));
             vec![s * (a * b - c)]
         });
