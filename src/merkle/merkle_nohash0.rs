@@ -32,11 +32,6 @@ impl Circuit<Fp> for MerkleCircuitNoHash0 {
     type FloorPlanner = SimpleFloorPlanner;
 
     fn without_witnesses(&self) -> Self {
-        // Self {
-        //     leaf: Value::unknown(),
-        //     path_elements: vec![],
-        //     path_indices: vec![],
-        // }
         Self::default()
     }
 

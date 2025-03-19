@@ -17,22 +17,18 @@ pub struct MerkleConfig {
 }
 
 #[derive(Debug, Default, Clone)]
-pub struct MerkleCircuitNoHash2 {
+pub struct MerkleCircuitNoHash1 {
     pub leaf: Value<Fp>,
     pub path_elements: Vec<Value<Fp>>,
     pub path_indices: Vec<Value<Fp>>,
 }
 
-impl Circuit<Fp> for MerkleCircuitNoHash2 {
+impl Circuit<Fp> for MerkleCircuitNoHash1 {
     type Config = MerkleConfig;
     type FloorPlanner = SimpleFloorPlanner;
 
     fn without_witnesses(&self) -> Self {
-        Self {
-            leaf: Value::unknown(),
-            path_elements: vec![],
-            path_indices: vec![],
-        }
+        Self::default()
     }
 
     fn configure(meta: &mut ConstraintSystem<Fp>) -> MerkleConfig {
@@ -51,16 +47,12 @@ impl Circuit<Fp> for MerkleCircuitNoHash2 {
         let swap_selector = meta.selector();
         let swap_bit_bool_selector = meta.selector();
 
-        // we check that the `swap_bit` (advice[2]) is either `0` or `1`
         meta.create_gate("bool constraint", |meta| {
             let s = meta.query_selector(swap_bit_bool_selector);
             let swap_bit = meta.query_advice(advice[2], Rotation::cur());
             vec![s * swap_bit.clone() * (Expression::Constant(Fp::from(1)) - swap_bit)]
         });
 
-        // if the swap selector is on (on the first row)
-        // then we check the `swap_bit`
-        // If it's on (1) -> we make sure the leaves are swapped on the next row
         meta.create_gate("swap constraint", |meta| {
             let s = meta.query_selector(swap_selector);
             let swap_bit = meta.query_advice(advice[2], Rotation::cur());
@@ -112,7 +104,7 @@ impl Circuit<Fp> for MerkleCircuitNoHash2 {
     }
 }
 
-impl MerkleCircuitNoHash2 {
+impl MerkleCircuitNoHash1 {
     pub fn merkle_prove_layer(
         &self,
         config: MerkleConfig,
