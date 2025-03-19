@@ -151,16 +151,13 @@ impl MerkleCircuitNoHash1 {
                     }
                 });
 
-                // left cell
                 region.assign_advice(|| "left node to be hashed", config.merkle[0], 1, || left)?;
-                // right cell
                 region.assign_advice(
                     || "right node to be hashed",
                     config.merkle[1],
                     1,
                     || right,
                 )?;
-
                 Ok(region.assign_advice(|| "result", config.merkle[2], 1, || left + right)?)
             },
         )
