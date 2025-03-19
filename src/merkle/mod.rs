@@ -70,15 +70,13 @@ pub fn merke_nohash1() {
     assert!(prover.verify().is_ok());
 
     // Let's fake the proof
-
+    // we just pass the root hash as the leaf, and no other layer
     let circuit = MerkleCircuitNoHash1 {
         leaf: Value::known(root),
         path_elements: vec![],
         path_indices: vec![],
     };
-
     let prover = MockProver::run(4, &circuit, vec![vec![root]]).unwrap();
-    // println!("prover: {:#?}", prover);
     assert!(prover.verify().is_ok());
 }
 

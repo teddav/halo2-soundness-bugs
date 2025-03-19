@@ -124,6 +124,7 @@ impl MerkleCircuitNoHash0 {
         layouter.assign_region(
             || "merkle prove",
             |mut region| {
+                // we enable the swap selector only on the first row
                 config.swap_selector.enable(&mut region, 0)?;
                 config.swap_bit_bool_selector.enable(&mut region, 0)?;
 

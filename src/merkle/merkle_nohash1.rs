@@ -13,6 +13,7 @@ pub struct MerkleConfig {
     pub merkle: [Column<Advice>; 3],
     pub swap_selector: Selector,
     pub swap_bit_bool_selector: Selector,
+    pub hash_selector: Selector,
     pub root_hash: Column<Instance>,
 }
 
@@ -46,6 +47,7 @@ impl Circuit<Fp> for MerkleCircuitNoHash1 {
 
         let swap_selector = meta.selector();
         let swap_bit_bool_selector = meta.selector();
+        let hash_selector = meta.selector();
 
         meta.create_gate("bool constraint", |meta| {
             let s = meta.query_selector(swap_bit_bool_selector);
@@ -71,10 +73,19 @@ impl Circuit<Fp> for MerkleCircuitNoHash1 {
             vec![constraint1, constraint2]
         });
 
+        meta.create_gate("root hash constraint", |meta| {
+            let s = meta.query_selector(hash_selector);
+            let left = meta.query_advice(advice[0], Rotation::cur());
+            let right = meta.query_advice(advice[1], Rotation::cur());
+            let hash = meta.query_advice(advice[2], Rotation::cur());
+            vec![s * (left + right - hash)]
+        });
+
         MerkleConfig {
             merkle: advice,
             swap_selector,
             swap_bit_bool_selector,
+            hash_selector,
             root_hash,
         }
     }
@@ -118,6 +129,8 @@ impl MerkleCircuitNoHash1 {
             |mut region| {
                 config.swap_selector.enable(&mut region, 0)?;
                 config.swap_bit_bool_selector.enable(&mut region, 0)?;
+                // we enable the hash selector on the second row
+                config.hash_selector.enable(&mut region, 1)?;
 
                 node_cell.copy_advice(
                     || "copy previous node cell",
@@ -148,7 +161,7 @@ impl MerkleCircuitNoHash1 {
                     || right,
                 )?;
 
-                Ok(region.assign_advice(|| "result", config.merkle[2], 0, || left + right)?)
+                Ok(region.assign_advice(|| "result", config.merkle[2], 1, || left + right)?)
             },
         )
     }
