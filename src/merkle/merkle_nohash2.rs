@@ -121,7 +121,7 @@ impl MerkleCircuitNoHash2 {
         neighbor: Value<Fp>,
         swap_bit: Value<Fp>,
     ) -> Result<AssignedCell<Fp, Fp>, ErrorFront> {
-        let (left, right) = layouter.assign_region(
+        layouter.assign_region(
             || "merkle prove",
             |mut region| {
                 config.swap_selector.enable(&mut region, 0)?;
@@ -146,34 +146,18 @@ impl MerkleCircuitNoHash2 {
                     }
                 });
 
-                let left_cell = region.assign_advice(
-                    || "left node to be hashed",
-                    config.merkle[0],
-                    1,
-                    || left,
-                )?;
-                let right_cell = region.assign_advice(
+                // left cell
+                region.assign_advice(|| "left node to be hashed", config.merkle[0], 1, || left)?;
+                // right cell
+                region.assign_advice(
                     || "right node to be hashed",
                     config.merkle[1],
                     1,
                     || right,
                 )?;
 
-                Ok((left_cell, right_cell))
+                Ok(region.assign_advice(|| "result", config.merkle[2], 0, || left + right)?)
             },
-        )?;
-
-        let result_hash_cell = layouter.assign_region(
-            || "merkle prove",
-            |mut region| {
-                region.assign_advice(
-                    || "result",
-                    config.merkle[2],
-                    0,
-                    || left.value() + right.value(),
-                )
-            },
-        )?;
-        Ok(result_hash_cell)
+        )
     }
 }
