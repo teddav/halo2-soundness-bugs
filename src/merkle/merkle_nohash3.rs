@@ -17,13 +17,13 @@ pub struct MerkleConfig {
 }
 
 #[derive(Debug, Default, Clone)]
-pub struct MerkleCircuitNoHash4 {
+pub struct MerkleCircuitNoHash3 {
     pub leaf: Value<Fp>,
     pub path_elements: Vec<Value<Fp>>,
     pub path_indices: Vec<Value<Fp>>,
 }
 
-impl Circuit<Fp> for MerkleCircuitNoHash4 {
+impl Circuit<Fp> for MerkleCircuitNoHash3 {
     type Config = MerkleConfig;
     type FloorPlanner = SimpleFloorPlanner;
 
@@ -97,7 +97,7 @@ impl Circuit<Fp> for MerkleCircuitNoHash4 {
             |mut region| region.assign_advice(|| "assign leaf", config.merkle[0], 0, || self.leaf),
         )?;
 
-        let hashed_leaf = MerkleCircuitNoHash4::hash(leaf_cell.value(), None);
+        let hashed_leaf = MerkleCircuitNoHash3::hash(leaf_cell.value(), None);
         let leaf_hash = layouter.assign_region(
             || "assign leaf",
             |mut region| {
@@ -127,7 +127,7 @@ impl Circuit<Fp> for MerkleCircuitNoHash4 {
     }
 }
 
-impl MerkleCircuitNoHash4 {
+impl MerkleCircuitNoHash3 {
     pub fn hash(left: Value<&Fp>, right: Option<Value<&Fp>>) -> Value<Fp> {
         if let Some(right) = right {
             left + right
@@ -193,7 +193,7 @@ impl MerkleCircuitNoHash4 {
                     || "result",
                     config.merkle[2],
                     0,
-                    || MerkleCircuitNoHash4::hash(left.value(), Some(right.value())),
+                    || MerkleCircuitNoHash3::hash(left.value(), Some(right.value())),
                 )
             },
         )?;
