@@ -1,3 +1,4 @@
+use halo2_poseidon::utilities::FieldValue;
 use halo2_proofs::{
     arithmetic::Field,
     circuit::{AssignedCell, Layouter, SimpleFloorPlanner, Value},
@@ -11,30 +12,26 @@ use halo2_proofs::{
 #[derive(Debug, Clone)]
 pub struct MerkleConfig {
     pub merkle: [Column<Advice>; 3],
-    pub root_hash: Column<Instance>,
     pub swap_selector: Selector,
     pub swap_bit_bool_selector: Selector,
     pub hash_selector: Selector,
     pub leaf_hash_selector: Selector,
+    pub root_hash: Column<Instance>,
 }
 
 #[derive(Debug, Default, Clone)]
-pub struct MerkleCircuitNoHash5 {
+pub struct MerkleCircuitNoHash4 {
     pub leaf: Value<Fp>,
     pub path_elements: Vec<Value<Fp>>,
     pub path_indices: Vec<Value<Fp>>,
 }
 
-impl Circuit<Fp> for MerkleCircuitNoHash5 {
+impl Circuit<Fp> for MerkleCircuitNoHash4 {
     type Config = MerkleConfig;
     type FloorPlanner = SimpleFloorPlanner;
 
     fn without_witnesses(&self) -> Self {
-        Self {
-            leaf: Value::unknown(),
-            path_elements: vec![],
-            path_indices: vec![],
-        }
+        Self::default()
     }
 
     fn configure(meta: &mut ConstraintSystem<Fp>) -> MerkleConfig {
@@ -55,16 +52,12 @@ impl Circuit<Fp> for MerkleCircuitNoHash5 {
         let hash_selector = meta.selector();
         let leaf_hash_selector = meta.selector();
 
-        // we check that the `swap_bit` (advice[2]) is either `0` or `1`
         meta.create_gate("bool constraint", |meta| {
             let s = meta.query_selector(swap_bit_bool_selector);
             let swap_bit = meta.query_advice(advice[2], Rotation::cur());
             vec![s * swap_bit.clone() * (Expression::Constant(Fp::from(1)) - swap_bit)]
         });
 
-        // if the swap selector is on (on the first row)
-        // then we check the `swap_bit`
-        // If it's on (1) -> we make sure the leaves are swapped on the next row
         meta.create_gate("swap constraint", |meta| {
             let s = meta.query_selector(swap_selector);
             let swap_bit = meta.query_advice(advice[2], Rotation::cur());
@@ -93,17 +86,17 @@ impl Circuit<Fp> for MerkleCircuitNoHash5 {
         meta.create_gate("leaf hash constraint", |meta| {
             let s = meta.query_selector(leaf_hash_selector);
             let leaf = meta.query_advice(advice[0], Rotation::cur());
-            let hash = meta.query_advice(advice[1], Rotation::cur());
+            let hash = meta.query_advice(advice[2], Rotation::cur());
             vec![s * (leaf.clone() + leaf - hash)]
         });
 
         MerkleConfig {
             merkle: advice,
-            root_hash,
             swap_selector,
             swap_bit_bool_selector,
             hash_selector,
             leaf_hash_selector,
+            root_hash,
         }
     }
 
@@ -112,13 +105,13 @@ impl Circuit<Fp> for MerkleCircuitNoHash5 {
         config: MerkleConfig,
         mut layouter: impl Layouter<Fp>,
     ) -> Result<(), ErrorFront> {
-        let hashed_leaf = MerkleCircuitNoHash5::hash(self.leaf.as_ref(), None);
+        let hashed_leaf = MerkleCircuitNoHash4::hash(self.leaf.as_ref(), None);
         let leaf_hash = layouter.assign_region(
             || "assign leaf",
             |mut region| {
                 config.leaf_hash_selector.enable(&mut region, 0)?;
                 region.assign_advice(|| "assign leaf", config.merkle[0], 0, || self.leaf)?;
-                region.assign_advice(|| "assign leaf hash", config.merkle[1], 0, || hashed_leaf)
+                region.assign_advice(|| "assign leaf hash", config.merkle[2], 0, || hashed_leaf)
             },
         )?;
 
@@ -144,7 +137,7 @@ impl Circuit<Fp> for MerkleCircuitNoHash5 {
     }
 }
 
-impl MerkleCircuitNoHash5 {
+impl MerkleCircuitNoHash4 {
     pub fn hash(left: Value<&Fp>, right: Option<Value<&Fp>>) -> Value<Fp> {
         if let Some(right) = right {
             left + right
@@ -161,7 +154,7 @@ impl MerkleCircuitNoHash5 {
         neighbor: Value<Fp>,
         swap_bit: Value<Fp>,
     ) -> Result<AssignedCell<Fp, Fp>, ErrorFront> {
-        let result_hash_cell = layouter.assign_region(
+        layouter.assign_region(
             || "merkle prove",
             |mut region| {
                 config.swap_selector.enable(&mut region, 0)?;
@@ -187,28 +180,20 @@ impl MerkleCircuitNoHash5 {
                     }
                 });
 
-                let left_cell = region.assign_advice(
-                    || "left node to be hashed",
-                    config.merkle[0],
-                    1,
-                    || left,
-                )?;
-                let right_cell = region.assign_advice(
+                region.assign_advice(|| "left node to be hashed", config.merkle[0], 1, || left)?;
+                region.assign_advice(
                     || "right node to be hashed",
                     config.merkle[1],
                     1,
                     || right,
                 )?;
-
-                region.assign_advice(
+                Ok(region.assign_advice(
                     || "result",
                     config.merkle[2],
                     1,
-                    || MerkleCircuitNoHash5::hash(left_cell.value(), Some(right_cell.value())),
-                )
+                    || MerkleCircuitNoHash4::hash(left.value(), Some(right.value())),
+                )?)
             },
-        )?;
-
-        Ok(result_hash_cell)
+        )
     }
 }

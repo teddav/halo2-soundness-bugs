@@ -9,12 +9,12 @@ fn main() {
     casino::casino();
     square_root::square_root();
 
-    // hash::hash_circuit();
     merkle::merke_nohash0();
     merkle::merke_nohash1();
     merkle::merke_nohash2();
     merkle::merke_nohash3();
+    merkle::merke_nohash4();
 
-    // merkle::merke_nohash5();
+    // hash::hash_circuit();
     // merkle::merke_circuit_with_hash();
 }
