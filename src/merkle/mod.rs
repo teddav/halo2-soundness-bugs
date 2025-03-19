@@ -122,15 +122,25 @@ pub fn merke_nohash3() {
             Value::known(PallasFp::from(0)),
         ],
     };
-
     let prover = MockProver::run(4, &circuit, vec![vec![root]]).unwrap();
     assert!(prover.verify().is_ok());
 
-    // Let's fake the proof
-    let fake_root = PallasFp::from(0x1234);
-    let mut prover = MockProver::run(4, &circuit, vec![vec![fake_root]]).unwrap();
-    let advice = prover.advice_mut(2);
-    advice[7] = CellValue::Assigned(fake_root);
+    // you know the drill by now... let's fake the proof again!
+    let random_leaf = PallasFp::from(15);
+    let circuit = MerkleCircuitNoHash3 {
+        leaf: Value::known(random_leaf),
+        path_elements: vec![Value::known(h2)],
+        path_indices: vec![Value::known(PallasFp::from(0))],
+    };
+    let mut prover = MockProver::run(4, &circuit, vec![vec![root]]).unwrap();
+    // Ok this one is a bit tricky, we need to change the advice for the first and third columns
+    // because the value is copied multiple times
+    let advice0 = prover.advice_mut(0);
+    advice0[1] = CellValue::Assigned(h1);
+    advice0[2] = CellValue::Assigned(h1);
+    let advice2 = prover.advice_mut(2);
+    advice2[0] = CellValue::Assigned(h1);
+    advice2[2] = CellValue::Assigned(root);
     assert!(prover.verify().is_ok());
 }
 
