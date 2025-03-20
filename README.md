@@ -14,7 +14,7 @@ Halo2 offers several key advantages:
 - No trusted setup: By default, it uses the IPA (Inner Product Argument) as a polynomial commitment scheme, eliminating the need for a trusted setup. However, the PSE fork of Halo2 introduced KZG commitments, which do require a trusted setup.
 - Custom gates & flexible layouts: Unlike rigid proving systems, Halo2 lets developers define custom constraints and optimize circuits for specific use cases, such as elliptic curve operations or cryptographic hash functions.
 
-This flexibility is Halo2’s biggest strength—but also its main challenge. Writing circuits in Halo2 is harder than in some other frameworks because of the need to manage constraint logic manually.
+This flexibility is Halo2’s biggest strength—but also its main challenge. Writing circuits in Halo2 can be more challenging compared to other frameworks due to the requirement of manually managing constraint logic.
 
 ### How does it compare to Noir?
 
@@ -35,7 +35,7 @@ Building a zero-knowledge proof is a complex process with many layers of abstrac
 - Underlying cryptographic assumptions (e.g., elliptic curves, commitment schemes) to remain secure.
 - and many other layers in-between…
 
-These layers introduce potential risks—for example, elliptic curve cryptography is currently secure, but long-term threats (such as quantum computing) are why some proof systems are shifting toward hash-based commitments.
+These layers introduce potential risks—for example, elliptic curve cryptography is currently secure, but long-term threats (such as quantum computing) are why some proof systems are shifting toward quantum-safe alternatives (for example, hash-based and lattice-based).
 
 That said, for now, we’ll assume everything below our circuit is secure and focus purely on soundness within the circuit itself.
 
@@ -61,8 +61,6 @@ Going back to our Sudoku example:
 
 - Soundness issue → A player fakes a proof and wins unfairly.
 - Completeness issue → A player genuinely solves the puzzle, but the proof incorrectly fails, unfairly disqualifying them.
-
-While completeness issues can be frustrating, they usually don’t lead to security vulnerabilities—unlike soundness issues, which can be catastrophic.
 
 ## Common ZK Circuit Vulnerabilities
 
@@ -90,7 +88,7 @@ Let’s begin with something simple.
 
 Imagine we’re in a math competition. Contestants don’t have calculators and are given a number `result`. They need to find two numbers, `a` and `b`, such that they multiply to `result`. The goal is for them to generate a proof that can be verified without revealing the solution to other contestants.
 
-Take a look at `mul/mod.rs`. You’ll notice that the proof is generated correctly, even though the values are incorrect. Why does this happen?
+Take a look at [`mul/mod.rs`](./src/mul/mod.rs). You’ll notice that the proof is generated correctly, even though the values are incorrect. Why does this happen?
 
 It’s because we forgot to add a constraint on the result (i.e., the public input).
 
@@ -104,7 +102,7 @@ To fix the issue and ensure the result is correct, we need to constrain the inst
 layouter.constrain_instance(out.cell(), config.instance, 0)?;
 ```
 
-Take a look at `mul1.rs`
+Take a look at [`mul1.rs`](./src/mul/mul1.rs)
 
 ### mul2: constrain the rows
 
@@ -119,7 +117,7 @@ advice[2] = CellValue::Assigned(result);
 
 I accessed the advice column and modified the appropriate cell to be equal to the `result`. This bypasses the intended logic.
 
-To fix this in `mul2.rs`, I added a gate to enforce the correct multiplication relationship and prevent cheating.
+To fix this in [`mul2.rs`](./src/mul/mul2.rs), I added a gate to enforce the correct multiplication relationship and prevent cheating.
 
 However, even with this fix, the circuit is still not fully secure. Why? Because we haven't constrained the inputs. A cheater could pass `a=1` and `b=result`, and the proof would still be valid. To prevent this, we need to add range checks, and possibly even a constraint to ensure that `a` and `b` are prime numbers greater than 2.
 
@@ -165,7 +163,7 @@ This guarantees that the casino cannot manipulate the numbers, while still keepi
 
 But… what if there’s still a flaw? 🤔
 
-In `casino0.rs`, we avoided the same mistake made in `mul0`: here, the public output is correctly constrained.
+In [`casino0.rs`](./src/casino/casino0.rs), we avoided the same mistake made in [`mul0`](./src/mul/mul0.rs): here, the public output is correctly constrained.
 
 In the `synthesize()` function, we loop over the input “deposits” and assign values to the cells in the advice column (column 0). We also compute the total sum and assign it to the last row of the advice column.
 
@@ -179,7 +177,7 @@ However, we forgot to correctly constrain the rows in between, which is where th
 | …                  | a + b + c + …     |
 | j                  | a + b + c + … + j |
 
-In `casino1.rs`, you’ll see how we use this second column, and the “running sum” gate enforces the necessary constraints. We also introduce a “first row” gate to ensure the sum starts at zero. No cheating allowed!
+In [`casino1.rs`](./src/casino/casino1.rs), you’ll see how we use this second column, and the “running sum” gate enforces the necessary constraints. We also introduce a “first row” gate to ensure the sum starts at zero. No cheating allowed!
 
 But we face another issue: we could add a fake value that causes an overflow, which would be equivalent to adding a negative value. Let me explain:
 
@@ -193,7 +191,7 @@ In this case, we use a simple solution by constraining values to be within the r
 
 For higher numbers, we can decompose the value into bytes and range-check each byte individually.
 
-You can see how I’ve implemented this in `casino/mod.rs` and added the lookup table to `casino2.rs`. Notice that we now need at least 1000 rows in our table, so `K` must be at least 10 ($2^K > 1000$).
+You can see how I’ve implemented this in [`casino/mod.rs`](./src/casino/mod.rs) and added the lookup table to [`casino2.rs`](./src/casino/casino2.rs). Notice that we now need at least 1000 rows in our table, so `K` must be at least 10 ($2^K > 1000$).
 
 ## Merkle NoHash Circuit
 
@@ -222,7 +220,7 @@ This makes it easier to experiment with constraints and understand the underlyin
 
 Of course, a real Merkle tree relies on a secure hash function. So at the end of this tutorial, we’ll swap our addition-based approach for Poseidon, allowing you to test a proper Merkle tree implementation. Stay tuned! 😊
 
-### Version 0
+### [Version 0](./src/merkle/merkle_nohash0.rs)
 
 Let’s jump straight into building what _seems_ like a correctly constrained circuit. But… is it really? 🤔
 
@@ -257,7 +255,7 @@ By now, you might realize another major issue: even if we _do_ constrain the com
 
 Clearly, we need stronger constraints. Time to fix it in Version 1! 🚀
 
-### Version 1
+### [Version 1](./src/merkle/merkle_nohash1.rs)
 
 Now, we’ve constrained the root and added a gate to ensure the hash is computed correctly. Our Merkle tree should be secure… right?
 
@@ -271,7 +269,7 @@ Wow. Such an easy vulnerability. 😬
 
 Time to fix it!
 
-### Version 2
+### [Version 2](./src/merkle/merkle_nohash2.rs)
 
 To patch this, we ensure that at least one valid layer of the tree is present in the advice columns. This prevents users from skipping the hashing process entirely.
 
@@ -303,7 +301,7 @@ But… can we still break it? 🤔
 
 Let’s find out in Version 3! 🚀
 
-### Version 3
+### [Version 3](./src/merkle/merkle_nohash3.rs)
 
 Now, we hash the leaf first before constructing the tree. This should prevent cheating… right?
 
