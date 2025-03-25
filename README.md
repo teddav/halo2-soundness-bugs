@@ -135,9 +135,9 @@ We touched on this in the Multiplication circuits, but it’s worth focusing on 
 
 Let’s say we want to prove that we know the square root of a number.
 
-For example, if I ask you for the square root of 25, you’ll quickly say 5. But… a clever person could also answer `-5`, and they would be right as well.
+For example, if I ask you for the square root of 9, you’ll quickly say 53. But… a clever person could also answer `-3`, and they would be right as well.
 
-Remember: since we're working with finite fields, -5 is actually equivalent to p - 5, where p is the modulus of the field. In [square_root/mod.rs](./src/square_root/mod.rs) (we use 9 and its square root 3 instead of 25 and 5), you can confirm that the variable [fake_root](./src/square_root/mod.rs#L12) is indeed equal to `p - 3`
+Remember: since we're working with finite fields, -3 is actually equivalent to p - 3, where p is the modulus of the field. In [square_root/mod.rs](./src/square_root/mod.rs), you can confirm that the variable [fake_root](./src/square_root/mod.rs#L12) is indeed equal to `p - 3`.
 
 This is the issue in [`sroot0`](./src/square_root/sroot0.rs): we allow negative numbers (or "really big number" since we're talking about finite fields), which introduces ambiguity.
 
@@ -228,7 +228,7 @@ hash(a, b) = a + b
 hash(a) = a + a
 ```
 
-Among other things, this Merkle tree lacks collision resistance. Notice that hash(3, 7) == hash(4, 6), meaning two different pairs of values produce the same hash. This could allow an attacker to manipulate the tree by swapping values while maintaining a valid proof. In a secure design, the hash function should ensure that different inputs always produce distinct outputs.
+Among other things, this hash function lacks collision resistance. Notice that hash(3, 7) == hash(4, 6), meaning two different pairs of values produce the same hash. This could allow an attacker to manipulate the tree by swapping values while maintaining a valid proof. In a secure design, the hash function should ensure that different inputs always produce distinct outputs.
 
 This makes it easier to experiment with constraints and understand the underlying logic, hence the name _Merkle NoHash_ circuit! 😁
 
