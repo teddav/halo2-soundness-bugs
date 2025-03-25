@@ -137,9 +137,9 @@ Let’s say we want to prove that we know the square root of a number.
 
 For example, if I ask you for the square root of 25, you’ll quickly say 5. But… a clever person could also answer `-5`, and they would be right as well.
 
-Remember: since we're working with finite fields, -5 is actually equivalent to p - 5, where p is the modulus of the field. In [square_root/mod.rs](./src/square_root/mod.rs), you can confirm that the variable [fake_root](./src/square_root/mod.rs#L12) is indeed equal to `p - 3`
+Remember: since we're working with finite fields, -5 is actually equivalent to p - 5, where p is the modulus of the field. In [square_root/mod.rs](./src/square_root/mod.rs) (we use 9 and its square root 3 instead of 25 and 5), you can confirm that the variable [fake_root](./src/square_root/mod.rs#L12) is indeed equal to `p - 3`
 
-This is the issue in [`sroot0`](./src/square_root/sroot0.rs): we allow negative numbers (or "really big number" since we're talking in finite fields), which introduces ambiguity.
+This is the issue in [`sroot0`](./src/square_root/sroot0.rs): we allow negative numbers (or "really big number" since we're talking about finite fields), which introduces ambiguity.
 
 To fix this, we need to implement a **range check**: [we constrain the input to a defined range.](./src/square_root/sroot1.rs#L51)
 
@@ -147,7 +147,7 @@ You must decide in advance what that range should be. You can’t simply say, �
 
 For example, if your field’s prime is `p`, you could constrain the range to `[0, p/2]`, but that’s still a pretty large range.
 
-In this example, we’ll restrict the input to a smaller range of [1, 10]. This resolves the issue because p is very large, making it unlikely that an unintended negative value wraps around in our finite field.  
+In this example, we’ll restrict the input to a smaller range of [1, 10]. This resolves the issue because p is very large, making it impossible that an unintended negative value wraps around in our finite field.  
 However, if we were working in $\mathbb{F}_{11}$ this constraint would be ineffective because values would naturally wrap around within a much smaller range.
 
 This highlights an important point: when designing constraints, we must always consider the size of the field and how modular arithmetic interacts with our logic. A constraint that works well in a large prime field might be completely useless in a smaller one!
@@ -200,7 +200,7 @@ For higher numbers, we can decompose the value into bytes and range-check each b
 
 You can see how I’ve implemented this in [`casino/mod.rs`](./src/casino/mod.rs) and added the lookup table to [`casino2.rs`](./src/casino/casino2.rs). Notice that we now need at least 1000 rows in our table, so `K` must be at least 10 ($2^K > 1000$).
 
-Note that if the number of transactions is extremely large, p could still overflow, causing unintended behavior. In real-world conditions, a safeguard should be added to ensure that the number of transactions remains below a safe threshold. A reasonable check would be to enforce that the number of transactions is at most $< \frac{p}{1000}$, reducing the risk of overflow while maintaining efficiency.
+Note that if the number of transactions is extremely large, p could still overflow, causing unintended behavior. In real-world conditions, a safeguard should be added to ensure that the number of transactions remains below a safe threshold. A reasonable check would be to enforce that the number of transactions is smaller than $\frac{p}{1000}$, reducing the risk of overflow while maintaining efficiency.
 
 ## Merkle NoHash Circuit
 
@@ -228,11 +228,11 @@ hash(a, b) = a + b
 hash(a) = a + a
 ```
 
+Among other things, this Merkle tree lacks collision resistance. Notice that hash(3, 7) == hash(4, 6), meaning two different pairs of values produce the same hash. This could allow an attacker to manipulate the tree by swapping values while maintaining a valid proof. In a secure design, the hash function should ensure that different inputs always produce distinct outputs.
+
 This makes it easier to experiment with constraints and understand the underlying logic, hence the name _Merkle NoHash_ circuit! 😁
 
-Of course, a real Merkle tree relies on a secure hash function. So at the end of this tutorial, we’ll swap our addition-based approach for Poseidon, allowing you to test a proper Merkle tree implementation. Stay tuned! 😊
-
-This Merkle tree lacks collision resistance. Notice that hash(3, 7) == hash(4, 6), meaning two different pairs of values produce the same hash. This could allow an attacker to manipulate the tree by swapping values while maintaining a valid proof. In a secure design, the hash function should ensure that different inputs always produce distinct outputs.
+At the end of this tutorial, we’ll swap our addition-based approach for Poseidon, allowing you to test a proper Merkle tree implementation, with a secure hash function. Stay tuned! 😊
 
 ### [Version 0](./src/merkle/merkle_nohash0.rs)
 
