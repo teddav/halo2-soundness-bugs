@@ -133,17 +133,24 @@ Now, let’s explore a concept called a “non-deterministic circuit.” In simp
 
 We touched on this in the Multiplication circuits, but it’s worth focusing on more closely here.
 
-Let’s say we want to prove that we know the square root of a number. Ideally, there should only be one valid answer, but a flaw can easily arise.
+Let’s say we want to prove that we know the square root of a number.
 
 For example, if I ask you for the square root of 25, you’ll quickly say 5. But… a clever person could also answer `-5`, and they would be right as well.
 
-This is the issue in `sroot0`: we allow negative numbers, which introduces ambiguity.
+Remember: since we're working with finite fields, -5 is actually equivalent to p - 5, where p is the modulus of the field. In [square_root/mod.rs](./src/square_root/mod.rs), you can confirm that the variable [fake_root](./src/square_root/mod.rs#L12) is indeed equal to `p - 3`
 
-To fix this, we need to implement a **range check**: we constrain the input to a defined range.
+This is the issue in [`sroot0`](./src/square_root/sroot0.rs): we allow negative numbers (or "really big number" since we're talking in finite fields), which introduces ambiguity.
+
+To fix this, we need to implement a **range check**: [we constrain the input to a defined range.](./src/square_root/sroot1.rs#L51)
 
 You must decide in advance what that range should be. You can’t simply say, “I’ll limit to positive numbers,” because remember—there’s no inherent concept of negative numbers in a finite field.
 
-For example, if your field’s prime is `p`, you could constrain the range to `[0, p/2]`, but that’s still a pretty large range. In this case, we’ll limit the input to a smaller range of [1, 10].
+For example, if your field’s prime is `p`, you could constrain the range to `[0, p/2]`, but that’s still a pretty large range.
+
+In this example, we’ll restrict the input to a smaller range of [1, 10]. This resolves the issue because p is very large, making it unlikely that an unintended negative value wraps around in our finite field.  
+However, if we were working in $\mathbb{F}_{11}$ this constraint would be ineffective because values would naturally wrap around within a much smaller range.
+
+This highlights an important point: when designing constraints, we must always consider the size of the field and how modular arithmetic interacts with our logic. A constraint that works well in a large prime field might be completely useless in a smaller one!
 
 ## Casino: more range checks
 
@@ -193,13 +200,18 @@ For higher numbers, we can decompose the value into bytes and range-check each b
 
 You can see how I’ve implemented this in [`casino/mod.rs`](./src/casino/mod.rs) and added the lookup table to [`casino2.rs`](./src/casino/casino2.rs). Notice that we now need at least 1000 rows in our table, so `K` must be at least 10 ($2^K > 1000$).
 
+Note that if the number of transactions is extremely large, p could still overflow, causing unintended behavior. In real-world conditions, a safeguard should be added to ensure that the number of transactions remains below a safe threshold. A reasonable check would be to enforce that the number of transactions is at most $< \frac{p}{1000}$, reducing the risk of overflow while maintaining efficiency.
+
 ## Merkle NoHash Circuit
 
 Let’s take things up a notch and build a more complex circuit.
 
-Merkle trees are one of the most common and powerful data structures in cryptography, so why not prove one?
+Merkle trees are one of the most common and powerful data structures in cryptography, so why not make a circuit for it?
 
 The structure of our Merkle tree circuit is straightforward: we have a known root hash, which is passed as a public input, and the user must prove that they know a leaf contained within the tree.
+
+![merkle without hash](./merkle0.png)
+You can see in the image that the goal is to prove the inclusion of "leaf1" in the Merkle tree. To do this, we provide "leaf2" and "h2" as neighbor values, which are used step by step to recompute the intermediate hashes up to the root. This ensures that "leaf1" is indeed part of the tree without revealing the entire structure.
 
 But let’s add a little _twist_ to our Merkle circuit to simplify things. 😁
 
@@ -220,13 +232,15 @@ This makes it easier to experiment with constraints and understand the underlyin
 
 Of course, a real Merkle tree relies on a secure hash function. So at the end of this tutorial, we’ll swap our addition-based approach for Poseidon, allowing you to test a proper Merkle tree implementation. Stay tuned! 😊
 
+This Merkle tree lacks collision resistance. Notice that hash(3, 7) == hash(4, 6), meaning two different pairs of values produce the same hash. This could allow an attacker to manipulate the tree by swapping values while maintaining a valid proof. In a secure design, the hash function should ensure that different inputs always produce distinct outputs.
+
 ### [Version 0](./src/merkle/merkle_nohash0.rs)
 
 Let’s jump straight into building what _seems_ like a correctly constrained circuit. But… is it really? 🤔
 
 Let’s break it down.
 
-We’ll use three advice columns:
+We’ll use [three advice columns](./src/merkle/merkle_nohash0.rs#L16):
 
 - **Column 1** stores the left leaf.
 - **Column 2** stores the right leaf.
@@ -257,13 +271,13 @@ Clearly, we need stronger constraints. Time to fix it in Version 1! 🚀
 
 ### [Version 1](./src/merkle/merkle_nohash1.rs)
 
-Now, we’ve constrained the root and added a gate to ensure the hash is computed correctly. Our Merkle tree should be secure… right?
+Now, we’ve [constrained the root](./src/merkle/merkle_nohash1.rs#L114) and added a gate to ensure the [hash is computed correctly](./src/merkle/merkle_nohash1.rs#L76). Our Merkle tree should be secure… right?
 
 Not so fast. 🚨
 
 There’s still a major flaw:
 
-A prover could bypass the checks by passing empty elements and simply providing the known root as a leaf.
+A prover could bypass the checks by passing empty elements and simply [providing the known root as a leaf](./src/merkle/mod.rs#L72).
 
 Wow. Such an easy vulnerability. 😬
 
@@ -271,11 +285,11 @@ Time to fix it!
 
 ### [Version 2](./src/merkle/merkle_nohash2.rs)
 
-To patch this, we ensure that at least one valid layer of the tree is present in the advice columns. This prevents users from skipping the hashing process entirely.
+To patch this, we ensure that [at least one valid layer of the tree is present in the advice columns](./src/merkle/merkle_nohash2.rs#L103). This prevents users from skipping the hashing process entirely.
 
 Great! Our proof is getting stronger… but we still have a problem.
 
-Right now, the leaf itself is not hashed, meaning a prover could provide the last layer as input and still compute a valid root.
+Right now, the leaf itself is not hashed, meaning a prover could [provide the last layer as input](./src/merkle/mod.rs#L92) and still compute a valid root.
 
 Let’s break it down with a visual example:
 
@@ -303,11 +317,11 @@ Let’s find out in Version 3! 🚀
 
 ### [Version 3](./src/merkle/merkle_nohash3.rs)
 
-Now, we hash the leaf first before constructing the tree. This should prevent cheating… right?
+Now, we [hash the leaf first before constructing the tree](./src/merkle/merkle_nohash3.rs#L99). This should prevent cheating… right?
 
 Not quite. We run into another issue—our initial leaf hash isn’t constrained.
 
-That means a prover can still bypass the entire hashing process by providing a fake leaf. We’re back to our previous vulnerability:
+That means a prover can still bypass the entire hashing process by [providing a fake leaf](./src/merkle/mod.rs#L125). We’re back to our previous vulnerability:
 
 🚨 The prover can simply pass `h1` as a "leaf" and `h2` as a neighbor, skipping the actual hashing.
 
@@ -342,7 +356,7 @@ Our table now looks like this:
 | 14        | 62        | 0         |
 | 14        | 62        | 76        |
 
-### Version 4: the masterpiece
+### [Version 4: the masterpiece](./src/merkle/merkle_nohash4.rs)
 
 Finally, we arrive at **Version 4**—the **secure** version of our Merkle tree circuit! 🎉
 
