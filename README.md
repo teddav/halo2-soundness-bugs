@@ -135,7 +135,7 @@ We touched on this in the Multiplication circuits, but it’s worth focusing on 
 
 Let’s say we want to prove that we know the square root of a number.
 
-For example, if I ask you for the square root of 9, you’ll quickly say 53. But… a clever person could also answer `-3`, and they would be right as well.
+For example, if I ask you for the square root of 9, you’ll quickly say 3. But… a clever person could also answer `-3`, and they would be right as well.
 
 Remember: since we're working with finite fields, -3 is actually equivalent to p - 3, where p is the modulus of the field. In [square_root/mod.rs](./src/square_root/mod.rs), you can confirm that the variable [fake_root](./src/square_root/mod.rs#L12) is indeed equal to `p - 3`.
 
