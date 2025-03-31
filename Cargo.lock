@@ -223,6 +223,7 @@ dependencies = [
 [[package]]
 name = "halo2_backend"
 version = "0.4.0"
+source = "git+https://github.com/privacy-scaling-explorations/halo2?tag=v0.4.0#7eb156ac79589093719ffdd24ccf4440d717e405"
 dependencies = [
  "blake2b_simd",
  "ff",
@@ -239,6 +240,7 @@ dependencies = [
 [[package]]
 name = "halo2_frontend"
 version = "0.4.0"
+source = "git+https://github.com/privacy-scaling-explorations/halo2?tag=v0.4.0#7eb156ac79589093719ffdd24ccf4440d717e405"
 dependencies = [
  "blake2b_simd",
  "ff",
@@ -251,6 +253,7 @@ dependencies = [
 [[package]]
 name = "halo2_middleware"
 version = "0.4.0"
+source = "git+https://github.com/privacy-scaling-explorations/halo2?tag=v0.4.0#7eb156ac79589093719ffdd24ccf4440d717e405"
 dependencies = [
  "ff",
  "halo2curves 0.7.0",
@@ -260,6 +263,7 @@ dependencies = [
 [[package]]
 name = "halo2_poseidon"
 version = "0.2.0"
+source = "git+https://github.com/teddav/poseidon-gadget?branch=halo-v0.4#dfeb9bf3318fbbbb77e113e732dd01d6f503749b"
 dependencies = [
  "arrayvec",
  "bitvec",
@@ -276,6 +280,7 @@ dependencies = [
 [[package]]
 name = "halo2_proofs"
 version = "0.4.0"
+source = "git+https://github.com/privacy-scaling-explorations/halo2?tag=v0.4.0#7eb156ac79589093719ffdd24ccf4440d717e405"
 dependencies = [
  "group",
  "halo2_backend",

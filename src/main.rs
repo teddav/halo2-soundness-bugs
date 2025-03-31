@@ -15,6 +15,6 @@ fn main() {
     merkle::merke_nohash3();
     merkle::merke_nohash4();
 
-    // hash::hash_circuit();
-    // merkle::merke_circuit_with_hash();
+    hash::hash_circuit();
+    merkle::merke_circuit_with_hash();
 }

@@ -8,8 +8,5 @@ halo2_proofs = { git = "https://github.com/privacy-scaling-explorations/halo2", 
 halo2_poseidon = { git = "https://github.com/privacy-scaling-explorations/poseidon-gadget" }
 rand = "0.8.0"
 
-[patch."https://github.com/privacy-scaling-explorations/halo2"]
-halo2_proofs = { path = "../halo2/halo2_proofs" }
-
 [patch."https://github.com/privacy-scaling-explorations/poseidon-gadget"]
-halo2_poseidon = { path = "../poseidon-gadget" }
+halo2_poseidon = { git = "https://github.com/teddav/poseidon-gadget", branch = "halo-v0.4" }

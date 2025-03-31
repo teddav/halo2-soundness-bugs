@@ -77,16 +77,12 @@ impl<S: Spec<Fp, WIDTH, RATE>, const WIDTH: usize, const RATE: usize> Circuit<Fp
         let swap_selector = meta.selector();
         let swap_bit_bool_selector = meta.selector();
 
-        // we check that the `swap_bit` (advice[2]) is either `0` or `1`
         meta.create_gate("bool constraint", |meta| {
             let s = meta.query_selector(swap_bit_bool_selector);
             let swap_bit = meta.query_advice(advice[2], Rotation::cur());
             vec![s * swap_bit.clone() * (Expression::Constant(Fp::from(1)) - swap_bit)]
         });
 
-        // if the swap selector is on (on the first row)
-        // then we check the `swap_bit`
-        // If it's on (1) -> we make sure the leaves are swapped on the next row
         meta.create_gate("swap constraint", |meta| {
             let s = meta.query_selector(swap_selector);
             let swap_bit = meta.query_advice(advice[2], Rotation::cur());
@@ -137,21 +133,8 @@ impl<S: Spec<Fp, WIDTH, RATE>, const WIDTH: usize, const RATE: usize> Circuit<Fp
                 self.path_indices[i],
             )?;
         }
-        println!("digest: {:?}", digest);
-        // let output = hasher.hash(layouter.namespace(|| "hash"), message)?;
 
-        // layouter.assign_region(
-        //     || "constrain output",
-        //     |mut region| {
-        //         let expected_var = region.assign_advice(
-        //             || "load output",
-        //             config.pow5config.state[0],
-        //             0,
-        //             || self.output,
-        //         )?;
-        //         region.constrain_equal(output.cell(), expected_var.cell())
-        //     },
-        // )
+        layouter.constrain_instance(digest.cell(), config.root_hash, 0)?;
         Ok(())
     }
 }

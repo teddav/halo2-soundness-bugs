@@ -10,7 +10,7 @@ use halo2_proofs::{
 use std::marker::PhantomData;
 
 #[derive(Debug, Default, Clone, Copy)]
-pub struct HashCircuit<
+pub struct PoseidonCircuit<
     S: Spec<Fp, WIDTH, RATE>,
     const WIDTH: usize,
     const RATE: usize,
@@ -22,7 +22,7 @@ pub struct HashCircuit<
 }
 
 impl<S: Spec<Fp, WIDTH, RATE>, const WIDTH: usize, const RATE: usize, const L: usize> Circuit<Fp>
-    for HashCircuit<S, WIDTH, RATE, L>
+    for PoseidonCircuit<S, WIDTH, RATE, L>
 {
     type Config = Pow5Config<Fp, WIDTH, RATE>;
     type FloorPlanner = SimpleFloorPlanner;

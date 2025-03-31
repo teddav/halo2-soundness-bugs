@@ -1,8 +1,7 @@
 use halo2_proofs::{
     circuit::{Layouter, SimpleFloorPlanner, Value},
     halo2curves::bn256::Fr as Fp,
-    plonk::{Advice, Circuit, Column, ConstraintSystem, ErrorFront, Instance, Selector},
-    poly::Rotation,
+    plonk::{Advice, Circuit, Column, ConstraintSystem, ErrorFront, Instance},
 };
 
 #[derive(Debug, Default, Clone, Copy)]
