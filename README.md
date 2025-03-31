@@ -369,3 +369,25 @@ We’ve now correctly:
 ✅ Prevented any shortcut tricks
 
 This version should be **bulletproof**… or is it? 😏
+
+## Conclusion
+
+Throughout this article, we explored the fundamentals of Halo2 and the importance of correctly constraining circuits to ensure soundness. We built a simple Merkle tree circuit—without a cryptographic hash function at first—to highlight common vulnerabilities and progressively fixed them in multiple iterations. This step-by-step approach demonstrated how subtle mistakes can break the security of a ZK proof system, allowing invalid proofs to pass verification.
+
+Beyond Merkle trees, we also discussed general pitfalls in zero-knowledge circuits, such as unconstrained variables, incorrect range checks, and witness manipulation. Writing secure circuits requires careful design, thorough testing, and an understanding of how constraints interact within the finite field arithmetic of the proof system.
+
+While Halo2 offers powerful customization and flexibility, it also demands a deep understanding of ZK circuit design. Developers looking for an easier entry point might prefer higher-level languages like Noir, but for advanced use cases—such as recursive proofs or optimized constraints—Halo2 remains a strong choice.
+
+If you want to dive deeper, you can check out the [final version of the code on GitHub](https://github.com/teddav/halo2-soundness-bugs). Feel free to experiment, break things, and improve upon the designs we discussed.
+
+ZK circuits are still an evolving field, and every new vulnerability discovered helps strengthen the ecosystem. Happy proving! 🚀
+
+## Bonus: Poseidon hash function
+
+I’ve added a **Poseidon circuit**, based on the [poseidon-gadget](https://github.com/privacy-scaling-explorations/poseidon-gadget) by PSE. This implementation is directly derived from the [unit tests](https://github.com/privacy-scaling-explorations/poseidon-gadget/blob/2478c86285a25c27ee75fd3a000f84b70a8ad231/src/poseidon/pow5.rs#L807), so now it’s much easier for you to experiment with it 😊.
+
+The circuit takes a `message` as input and generates the expected output hash. While I won’t dive into the full details of how the Poseidon hash function works, here’s a quick overview: the function goes through multiple rounds, updating the `state` columns at each step while ensuring that all intermediate computations are properly constrained.
+
+Additionally, **round constants** (denoted `rc_a` and `rc_b`) are used in each round to help ensure the security of the hash.
+
+The core of Poseidon's security lies in its **S-box**, which is based on a simple power function, in this case, $x^5$, that is applied to each element of the state.
