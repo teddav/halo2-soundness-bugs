@@ -221,6 +221,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "halo2-soundness-bugs"
+version = "0.1.0"
+dependencies = [
+ "halo2_poseidon",
+ "halo2_proofs",
+ "rand",
+]
+
+[[package]]
 name = "halo2_backend"
 version = "0.4.0"
 source = "git+https://github.com/privacy-scaling-explorations/halo2?tag=v0.4.0#7eb156ac79589093719ffdd24ccf4440d717e405"
@@ -475,15 +484,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "37d3544b3f2748c54e147655edb5025752e2303145b5aefb3c3ea2c78b973bb0"
 dependencies = [
  "unicode-ident",
-]
-
-[[package]]
-name = "pse-halo2-soundness-bugs"
-version = "0.1.0"
-dependencies = [
- "halo2_poseidon",
- "halo2_proofs",
- "rand",
 ]
 
 [[package]]

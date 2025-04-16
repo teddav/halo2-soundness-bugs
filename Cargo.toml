@@ -1,5 +1,5 @@
 [package]
-name = "pse-halo2-soundness-bugs"
+name = "halo2-soundness-bugs"
 version = "0.1.0"
 edition = "2021"
 
